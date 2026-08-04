@@ -2,7 +2,7 @@
 
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5%2B-3178C6?logo=typescript&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Memarlıq](https://img.shields.io/badge/memarlıq-BFF-2ea44f)
@@ -27,6 +27,7 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 - [Rollar və İcazələr](#rollar-və-icazələr)
 - [İdarə Olunan Resurslar](#idarə-olunan-resurslar)
 - [Əmr Arayışı](#əmr-arayışı)
+- [Əlavə Sənədlər](#əlavə-sənədlər)
 - [Lisenziya](#lisenziya)
 
 ---
@@ -45,7 +46,8 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 
 - **İnterfeys** birbaşa backend-ə deyil, yalnız BFF-ə sorğu göndərir (`VITE_API_BASE_URL`).
 - **BFF** istifadəçinin sessiyasını cookie-yə bağlayır; backend giriş token-ını server tərəfindəki session store-da saxlayır və hər sorğuya `BackendAuthorizationHandler` vasitəsilə əlavə edir.
-- Bu dizayn sayəsində giriş token-ları heç vaxt brauzerə çatmır (XSS-ə qarşı token sızması riski aradan qalxır).
+- Bu dizayn sayəsində giriş token-ları heç vaxt brauzerə çatmır və XSS zamanı token sızması riski əhəmiyyətli dərəcədə azalır.
+- Admin SPA və bütün BFF endpoint-ləri `AdminSettings:SecretPath` ilə verilən ortaq prefix altındadır. Məsələn, `sys-control-9912` üçün login səhifəsi `/sys-control-9912/login`, login API-si isə `/sys-control-9912/api/auth/login` olur.
 
 ---
 
@@ -103,7 +105,7 @@ NexoraAcademy/
 │   └── NexoraAdminPanel/
 │       ├── NexoraAdminPanel.sln
 │       └── src/NexoraAcademy.AdminBff/
-│           ├── Program.cs                  # DI, auth, CORS, HttpClient qeydiyyatları
+│           ├── Program.cs                  # Application pipeline and endpoint composition
 │           ├── Controllers/                # BFF son nöqtələri (Auth, User, Course, ...)
 │           ├── Clients/                    # Nexora backend-ə gedən tipli HTTP klientləri
 │           ├── Auth/                        # Session store, icazə handler-i, rollar
@@ -152,7 +154,7 @@ Defolt ünvanlar:
 - HTTP: `http://localhost:5075`
 - HTTPS: `https://localhost:7280`
 
-OpenAPI sənədi yalnız Development mühitində `/openapi` altında yayımlanır.
+OpenAPI sənədi yalnız Development mühitində secret prefix altında yayımlanır. Defolt ayarla ünvan `/sys-control-9912/openapi/v1.json` olur.
 
 ### 2) İnterfeys (frontend)
 
@@ -162,7 +164,13 @@ npm install
 npm run dev
 ```
 
-İnterfeys defolt olaraq `http://localhost:5173` üzərində işləyir (BFF-in CORS ağ siyahısında `5173` və `3000` mövcuddur).
+İnterfeys defolt olaraq `http://localhost:5173/sys-control-9912/login` üzərində işləyir (BFF-in CORS ağ siyahısında `5173` və `3000` mövcuddur). Vite development server-i secret prefix-i BFF-in `appsettings.json` faylından oxuyur.
+
+Production publish zamanı BFF layihəsi `npm ci` və `npm run build` əmrlərini avtomatik işlədir, yaranan SPA fayllarını `wwwroot`-a əlavə edir və onları yalnız secret prefix altında servis edir:
+
+```bash
+dotnet publish -c Release
+```
 
 ---
 
@@ -179,21 +187,35 @@ npm run dev
 
 | Ayar | İzah |
 |------|------|
+| `AdminSettings:SecretPath` | Admin SPA və BFF API-lərinin ortaq, tək-seqmentli prefix-i. 12–64 simvol, yalnız kiçik hərf, rəqəm və defis qəbul edilir. |
+| `AdminSettings:LoginRateLimit:PermitLimit` | Eyni client IP-si üçün pəncərə daxilində icazə verilən login sorğularının sayı (defolt: `5`). |
+| `AdminSettings:LoginRateLimit:WindowSeconds` | Login rate-limit pəncərəsi, saniyə ilə (defolt: `60`). |
+| `AdminSettings:SessionIdleTimeoutMinutes` | Cookie və server sessiyasının hərəkətsizlik müddəti (defolt: `480`). |
 | `NexoraApi:BaseUrl` | Əsl Nexora backend API-nin baza ünvanı. **Məcburidir**; yoxdursa tətbiq işə düşərkən xəta verir. |
+| `NexoraApi:TimeoutSeconds` | Java API çağırışlarının maksimum gözləmə müddəti (defolt: `30`). |
 | `Cors:AllowedOrigins` | Cookie-li sorğulara icazə verilən interfeys mənbələri (məs. `http://localhost:5173`). |
+| `ReverseProxy:KnownProxies` | `X-Forwarded-For` / `X-Forwarded-Proto` başlıqlarına etibar ediləcək reverse proxy IP-ləri. Yalnız idarə etdiyiniz proxy-ləri əlavə edin. |
 
-> **Təhlükəsizlik qeydi:** Cookie `HttpOnly` və `SameSite=Strict`-dir. Production-da `Secure` bayrağı həmişə aktivdir (`CookieSecurePolicy.Always`); Development-da tələbata görə yumşaldılır.
+Production-da repo daxilindəki nümunə route-u dəyişmək üçün konfiqurasiyanı source-a yazmaq əvəzinə environment variable istifadə edin:
+
+```bash
+AdminSettings__SecretPath=your-random-production-path
+```
+
+> **Təhlükəsizlik qeydi:** Secret route panelin avtomatik skanlarla tapılmasını çətinləşdirən əlavə qatdır, authentication mexanizmi deyil. Cookie `HttpOnly` və `SameSite=Strict`-dir, production-da `Secure` bayrağı həmişə aktivdir (`CookieSecurePolicy.Always`), controller-lərdəki authentication və rol yoxlamaları isə qüvvədə qalır. `/admin`, `/admin/login`, `/administrator`, köhnə kök `/api/*` və `/login` ünvanları `404` qaytarır.
+
+> **Çox-instanslı deployment:** Daxili ASP.NET Core rate limiter hər BFF instansı üçün ayrıca sayğac saxlayır. Bir neçə replica işlədilirsə, eyni `5/dəqiqə/IP` limitini gateway/WAF səviyyəsində də tətbiq edin.
 
 ---
 
 ## Autentifikasiya Axını
 
-1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /api/auth/login`.
+1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /{secret-path}/api/auth/login`.
 2. BFF kimlik məlumatlarını Nexora backend-ə ötürür.
-   - Backend **OTP** tələb edərsə, BFF `OtpRequiredException` yaradır və interfeys OTP addımına yönləndirir.
+   - Backend **OTP** tələb edərsə, BFF brauzer sessiyası yaratmadan `OTP_REQUIRED` qaytarır. Tam OTP təsdiq axını ayrıca əlavə olunmalıdır.
 3. Təsdiq uğurludursa, BFF backend giriş token-ını server tərəfindəki session store-a yazır və brauzerə yalnız bir sessiya cookie-si qaytarır.
 4. Sonrakı hər sorğuda `BackendAuthorizationHandler` sessiyadakı token-ı backend çağırışlarına `Authorization` başlığı kimi əlavə edir.
-5. Sessiya məlumatı `GET /api/auth/me` ilə oxunur; `POST /api/auth/logout` sessiyanı bitirir.
+5. Sessiya məlumatı `GET /{secret-path}/api/auth/me` ilə oxunur; `POST /{secret-path}/api/auth/logout` sessiyanı bitirir.
 
 İcazəsiz və ya vaxtı bitmiş sorğularda BFF HTML yönləndirməsi əvəzinə JSON qaytarır: `401 UNAUTHORIZED` / `403 FORBIDDEN`.
 
@@ -236,6 +258,8 @@ Panel vasitəsilə idarə olunan əsas sahələr:
 | `npm run build` | TypeScript kompilyasiyası + production build |
 | `npm run preview` | Production build-in lokal önizləməsi |
 | `npm run lint` | Oxlint ilə lint |
+| `npm run typecheck` | Strict TypeScript yoxlaması |
+| `npm run check` | Lint + production build |
 
 **BFF** (`.../NexoraAcademy.AdminBff/`)
 
@@ -244,6 +268,15 @@ Panel vasitəsilə idarə olunan əsas sahələr:
 | `dotnet run` | Tətbiqi işə sal |
 | `dotnet build` | Kompilyasiya et |
 | `dotnet restore` | NuGet asılılıqlarını bərpa et |
+
+---
+
+## Əlavə Sənədlər
+
+- [Arxitektura və təhlükəsizlik sərhədləri](docs/ARCHITECTURE.md)
+- [Mövcud funksiyalar və prioritetləşdirilmiş çatışmazlıqlar](docs/FEATURE_MATRIX.md)
+- [Developer contribution qaydaları](CONTRIBUTING.md)
+- [Logo və brand asset qaydaları](docs/BRANDING.md)
 
 ---
 

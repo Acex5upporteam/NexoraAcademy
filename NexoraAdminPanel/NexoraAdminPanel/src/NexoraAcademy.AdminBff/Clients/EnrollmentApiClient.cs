@@ -8,5 +8,5 @@ public class EnrollmentApiClient(HttpClient httpClient)
 {
     public Task<EnrollmentResponse> CancelAsync(Guid id, CancelEnrollmentRequest request, CancellationToken ct = default) =>
         BackendHttpJson.SendAsync<EnrollmentResponse>(
-            httpClient, HttpMethod.Post, $"/api/v1/enrollments/{id}/cancel", request, ct);
+            HttpClient, HttpMethod.Post, $"/api/v1/enrollments/{id}/cancel", request, ct);
 }

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/auth/auth-context";
 import { hasRole, ROLE_LABELS } from "@/auth/roles";
 import { NAV_GROUPS } from "@/layout/nav-config";
-import { api } from "@/lib/api";
+import { API_BASE_URL, api } from "@/lib/api";
 import { ApiError } from "@/lib/api-error";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
@@ -39,7 +39,7 @@ export function DashboardPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="text-base">Backend Bağlantısı</CardTitle>
-            <CardDescription>{import.meta.env.VITE_API_BASE_URL} əlçatanlığı</CardDescription>
+            <CardDescription>{API_BASE_URL} əlçatanlığı</CardDescription>
           </div>
           <HealthBadge
             loading={healthQuery.isLoading}

@@ -6,6 +6,7 @@ import type { MeResponse } from "@/types/common";
 interface AuthContextValue {
   user: MeResponse | null;
   loading: boolean;
+  initializationError: ApiError | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -16,16 +17,24 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializationError, setInitializationError] = useState<ApiError | null>(null);
 
   const refreshMe = useCallback(async () => {
     try {
       const me = await api.get<MeResponse>("/api/auth/me");
       setUser(me);
+      setInitializationError(null);
     } catch (error) {
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
         setUser(null);
+        setInitializationError(null);
       } else {
         setUser(null);
+        setInitializationError(
+          error instanceof ApiError
+            ? error
+            : new ApiError(0, { code: "AUTH_INITIALIZATION_FAILED", message: "Sessiya yoxlanılmadı." }),
+        );
       }
     }
   }, []);
@@ -40,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const me = await api.post<MeResponse>("/api/auth/login", { email, password });
     setUser(me);
+    setInitializationError(null);
   }, []);
 
   const logout = useCallback(async () => {
@@ -47,11 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post("/api/auth/logout");
     } finally {
       setUser(null);
+      setInitializationError(null);
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshMe }}>
+    <AuthContext.Provider value={{ user, loading, initializationError, login, logout, refreshMe }}>
       {children}
     </AuthContext.Provider>
   );

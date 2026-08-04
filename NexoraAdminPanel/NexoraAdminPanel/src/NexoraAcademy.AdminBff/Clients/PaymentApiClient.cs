@@ -8,5 +8,5 @@ public class PaymentApiClient(HttpClient httpClient)
 {
     public Task<PaymentResponse> CaptureAsync(Guid id, CancellationToken ct = default) =>
         BackendHttpJson.SendAsync<PaymentResponse>(
-            httpClient, HttpMethod.Post, $"/api/v1/payments/{id}/capture", null, ct);
+            HttpClient, HttpMethod.Post, $"/api/v1/payments/{id}/capture", null, ct);
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.WebUtilities;
 using NexoraAcademy.AdminBff.Contracts.Backend;
 
@@ -14,13 +15,13 @@ public class CourseApiClient(HttpClient httpClient) : ICourseApiClient
         var query = new Dictionary<string, string?>
         {
             ["q"] = q,
-            ["categoryId"] = categoryId?.ToString(),
+            ["categoryId"] = categoryId?.ToString(CultureInfo.InvariantCulture),
             ["difficulty"] = difficulty,
             ["deliveryFormat"] = deliveryFormat,
-            ["published"] = published?.ToString(),
-            ["active"] = active?.ToString(),
-            ["page"] = page?.ToString(),
-            ["size"] = size?.ToString(),
+            ["published"] = published is null ? null : published.Value ? "true" : "false",
+            ["active"] = active is null ? null : active.Value ? "true" : "false",
+            ["page"] = page?.ToString(CultureInfo.InvariantCulture),
+            ["size"] = size?.ToString(CultureInfo.InvariantCulture),
             ["sort"] = sort
         };
         var nonNull = query.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);

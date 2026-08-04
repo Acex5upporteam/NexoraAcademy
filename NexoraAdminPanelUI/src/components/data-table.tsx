@@ -34,7 +34,7 @@ export function DataTable<T extends Record<string, unknown>>({
   rowActions,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

@@ -28,8 +28,18 @@ public static class BackendHttpJson
             return default!;
         }
 
-        var result = await response.Content.ReadFromJsonAsync<TResponse>(Options, ct);
-        return result!;
+        try
+        {
+            var result = await response.Content.ReadFromJsonAsync<TResponse>(Options, ct);
+            return result ?? throw new BackendProtocolException(
+                $"The backend returned an empty JSON response for {method} {path}.");
+        }
+        catch (JsonException ex)
+        {
+            throw new BackendProtocolException(
+                $"The backend returned malformed JSON for {method} {path}.",
+                ex);
+        }
     }
 
     public static async Task SendAsync(
@@ -57,7 +67,7 @@ public static class BackendHttpJson
         {
             error = await response.Content.ReadFromJsonAsync<BackendErrorResponse>(Options, ct);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
         }
 

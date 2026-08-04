@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.WebUtilities;
 using NexoraAcademy.AdminBff.Contracts.Backend;
 
@@ -28,8 +29,8 @@ public class UserApiClient(HttpClient httpClient) : IUserApiClient
             ["q"] = q,
             ["role"] = role,
             ["status"] = status,
-            ["page"] = page?.ToString(),
-            ["size"] = size?.ToString(),
+            ["page"] = page?.ToString(CultureInfo.InvariantCulture),
+            ["size"] = size?.ToString(CultureInfo.InvariantCulture),
             ["sort"] = sort
         };
         var nonNull = query.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);

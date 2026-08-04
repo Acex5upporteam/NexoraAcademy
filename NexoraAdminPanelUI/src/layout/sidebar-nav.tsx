@@ -8,7 +8,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
 
   return (
-    <nav className="flex flex-col gap-6 px-3 py-2">
+    <nav className="flex flex-col gap-6 px-3 py-2" aria-label="Əsas naviqasiya">
       {NAV_GROUPS.map((group) => {
         const visibleItems = group.items.filter((item) => hasRole(user?.role, item.roleGroup));
         if (visibleItems.length === 0) return null;

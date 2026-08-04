@@ -25,10 +25,21 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             await WriteAsync(context, HttpStatusCode.Unauthorized,
                 new ErrorResponse("OTP_REQUIRED", "Bu hesab ucun OTP tesdiqi teleb olunur, admin panelinden istifade edile bilmez."));
         }
+        catch (PanelAccessDeniedException)
+        {
+            await WriteAsync(context, HttpStatusCode.Forbidden,
+                new ErrorResponse("PANEL_ACCESS_DENIED", "Bu hesab admin paneline daxil ola bilmez."));
+        }
         catch (BackendApiException ex)
         {
             LogBackendError(ex);
             await WriteAsync(context, MapStatus(ex.StatusCode), MapError(ex));
+        }
+        catch (BackendProtocolException ex)
+        {
+            logger.LogError(ex, "Nexora backend returned an invalid response.");
+            await WriteAsync(context, HttpStatusCode.BadGateway,
+                new ErrorResponse("BACKEND_PROTOCOL_ERROR", "Backend servisi yanlis formatda cavab qaytardi."));
         }
         catch (HttpRequestException ex)
         {

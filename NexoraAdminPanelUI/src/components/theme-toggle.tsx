@@ -10,7 +10,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      aria-label="Temani deyish"
+      aria-label="Temanı dəyiş"
     >
       <Sun className="size-4 scale-100 dark:scale-0" />
       <Moon className="absolute size-4 scale-0 dark:scale-100" />

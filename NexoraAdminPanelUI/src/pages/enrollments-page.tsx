@@ -174,14 +174,14 @@ export function EnrollmentsPage() {
         rowActions={(row) => (
           <div className="flex justify-end gap-1">
             {row.status !== "CANCELLED" && row.status !== "COMPLETED" && (
-              <Button variant="ghost" size="icon" onClick={() => setCancelling(row)} title="Ləğv et">
+              <Button variant="ghost" size="icon" onClick={() => setCancelling(row)} aria-label="Ləğv et" title="Ləğv et">
                 <Ban className="size-4 text-amber-600" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
+            <Button variant="ghost" size="icon" onClick={() => openEdit(row)} aria-label="Redaktə et" title="Redaktə et">
               <Pencil className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setDeleting(row)}>
+            <Button variant="ghost" size="icon" onClick={() => setDeleting(row)} aria-label="Sil" title="Sil">
               <Trash2 className="size-4 text-destructive" />
             </Button>
           </div>

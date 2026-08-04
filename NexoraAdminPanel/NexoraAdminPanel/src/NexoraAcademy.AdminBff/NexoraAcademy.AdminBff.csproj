@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <SpaRoot>$(MSBuildThisFileDirectory)..\..\..\..\NexoraAdminPanelUI\</SpaRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +14,19 @@
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
   </ItemGroup>
+
+  <Target Name="BuildAdminSpa" BeforeTargets="ComputeFilesToPublish">
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci --no-audit --no-fund" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+
+    <ItemGroup>
+      <AdminSpaFiles Include="$(SpaRoot)dist\**\*" />
+      <ResolvedFileToPublish Include="@(AdminSpaFiles->'%(FullPath)')">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 
 </Project>

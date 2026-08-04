@@ -141,6 +141,7 @@ export function ResourceFormDialog<T extends Record<string, unknown>>({
               <button
                 type="button"
                 onClick={() => setShowAdvanced((v) => !v)}
+                aria-expanded={showAdvanced}
                 className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Ətraflı sahələr

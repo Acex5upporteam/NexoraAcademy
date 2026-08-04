@@ -37,7 +37,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Ümumi",
-    items: [{ label: "Ana Panel", to: "/dashboard", icon: Gauge, roleGroup: "any" }],
+    items: [{ label: "Ana Panel", to: "/dashboard", icon: Gauge, roleGroup: "panelAccess" }],
   },
   {
     label: "İstifadəçilər",

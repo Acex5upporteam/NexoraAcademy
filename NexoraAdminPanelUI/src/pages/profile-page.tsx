@@ -104,6 +104,8 @@ export function ProfilePage() {
             <Input
               id="currentPassword"
               type="password"
+              autoComplete="current-password"
+              maxLength={256}
               value={currentPassword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
             />
@@ -113,6 +115,8 @@ export function ProfilePage() {
             <Input
               id="newPassword"
               type="password"
+              autoComplete="new-password"
+              maxLength={256}
               value={newPassword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
             />

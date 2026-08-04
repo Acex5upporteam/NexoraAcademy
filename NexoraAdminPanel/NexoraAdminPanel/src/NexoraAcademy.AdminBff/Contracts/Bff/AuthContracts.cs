@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace NexoraAcademy.AdminBff.Contracts.Bff;
 
 public record LoginRequest(
-    [Required, EmailAddress] string Email,
-    [Required] string Password);
+    [Required, EmailAddress, StringLength(254)] string Email,
+    [Required, StringLength(256)] string Password);
 
 public record MeResponse(
     Guid Id,

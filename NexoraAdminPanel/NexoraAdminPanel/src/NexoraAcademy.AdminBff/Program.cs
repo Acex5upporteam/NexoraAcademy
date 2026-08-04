@@ -1,122 +1,51 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
 using NexoraAcademy.AdminBff.Auth;
-using NexoraAcademy.AdminBff.Clients;
-using NexoraAcademy.AdminBff.Contracts.Bff;
+using NexoraAcademy.AdminBff.Configuration;
 using NexoraAcademy.AdminBff.Middleware;
+using NexoraAcademy.AdminBff.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
+var adminSettings = AdminSettings.Load(builder.Configuration);
+builder.Services.AddSingleton(adminSettings);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAdminSecurity(builder.Configuration, builder.Environment, adminSettings);
+builder.Services.AddNexoraApiClients(builder.Configuration);
 
+builder.Services.AddDataProtection();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSingleton<ISessionStore, DistributedCacheSessionStore>();
 
-var nexoraApiSection = builder.Configuration.GetSection(NexoraApiOptions.SectionName);
-builder.Services.Configure<NexoraApiOptions>(nexoraApiSection);
-var nexoraApiBaseUrl = nexoraApiSection["BaseUrl"]
-    ?? throw new InvalidOperationException($"{NexoraApiOptions.SectionName}:BaseUrl konfiqurasiya edilmeyib.");
-
-builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
-{
-    client.BaseAddress = new Uri(nexoraApiBaseUrl);
-});
-
-builder.Services.AddHttpClient<IHealthApiClient, HealthApiClient>(client =>
-{
-    client.BaseAddress = new Uri(nexoraApiBaseUrl);
-});
-
-builder.Services.AddTransient<BackendAuthorizationHandler>();
-
-void AddAuthenticatedClient<TInterface, TImplementation>()
-    where TInterface : class
-    where TImplementation : class, TInterface
-{
-    builder.Services.AddHttpClient<TInterface, TImplementation>(client =>
-    {
-        client.BaseAddress = new Uri(nexoraApiBaseUrl);
-    }).AddHttpMessageHandler<BackendAuthorizationHandler>();
-}
-
-AddAuthenticatedClient<IUserApiClient, UserApiClient>();
-AddAuthenticatedClient<ICategoryApiClient, CategoryApiClient>();
-AddAuthenticatedClient<ICourseApiClient, CourseApiClient>();
-AddAuthenticatedClient<ICourseInstructorApiClient, CourseInstructorApiClient>();
-AddAuthenticatedClient<IInstructorApiClient, InstructorApiClient>();
-AddAuthenticatedClient<ICourseGroupApiClient, CourseGroupApiClient>();
-AddAuthenticatedClient<IEnrollmentApiClient, EnrollmentApiClient>();
-AddAuthenticatedClient<IPaymentApiClient, PaymentApiClient>();
-AddAuthenticatedClient<IScholarshipApiClient, ScholarshipApiClient>();
-AddAuthenticatedClient<ICmsContentApiClient, CmsContentApiClient>();
-AddAuthenticatedClient<ICampaignApiClient, CampaignApiClient>();
-AddAuthenticatedClient<IChatSessionApiClient, ChatSessionApiClient>();
-AddAuthenticatedClient<IContactSubmissionApiClient, ContactSubmissionApiClient>();
-AddAuthenticatedClient<ILeadApiClient, LeadApiClient>();
-AddAuthenticatedClient<IOAuthAccountApiClient, OAuthAccountApiClient>();
-AddAuthenticatedClient<ISessionApiClient, SessionApiClient>();
-AddAuthenticatedClient<INotificationApiClient, NotificationApiClient>();
-AddAuthenticatedClient<IKbArticleApiClient, KbArticleApiClient>();
-AddAuthenticatedClient<ICourseReviewApiClient, CourseReviewApiClient>();
-AddAuthenticatedClient<IGraduateOutcomeApiClient, GraduateOutcomeApiClient>();
-AddAuthenticatedClient<IAuditLogApiClient, AuditLogApiClient>();
-
-builder.Services.AddAuthentication(BffAuthConstants.CookieScheme)
-    .AddCookie(BffAuthConstants.CookieScheme, options =>
-    {
-        options.Cookie.Name = BffAuthConstants.CookieName;
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
-        options.ExpireTimeSpan = TimeSpan.FromDays(30);
-        options.SlidingExpiration = true;
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(
-                new ErrorResponse("UNAUTHORIZED", "Daxil olmaq teleb olunur."));
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(
-                new ErrorResponse("FORBIDDEN", "Bu emeliyyat ucun icazeniz yoxdur."));
-        };
-    });
-builder.Services.AddAuthorization();
-
-var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-const string corsPolicy = "AdminPanelFrontend";
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(corsPolicy, policy =>
-    {
-        policy.WithOrigins(corsOrigins)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
-
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseHsts();
 }
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<AdminRouteProtectionMiddleware>();
 
 app.UseHttpsRedirection();
-app.UseCors(corsPolicy);
+app.UseAdminStaticFiles(adminSettings);
+app.UseRouting();
+app.UseCors(AdminSecurityServiceCollectionExtensions.CorsPolicyName);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi($"{adminSettings.BasePath}/openapi/{{documentName}}.json");
+}
+
+app.MapGroup(adminSettings.BasePath)
+    .MapControllers()
+    .RequireAuthorization(BffAuthConstants.PanelAccessPolicy);
+app.MapAdminSpa(adminSettings);
 
 app.Run();

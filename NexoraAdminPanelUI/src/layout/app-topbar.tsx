@@ -44,7 +44,9 @@ export function AppTopbar() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <Sheet open={navOpen} onOpenChange={setNavOpen}>
-        <SheetTrigger render={<Button variant="ghost" size="icon" className="lg:hidden" />}>
+        <SheetTrigger
+          render={<Button variant="ghost" size="icon" className="lg:hidden" aria-label="Naviqasiya menyusunu aç" />}
+        >
           <Menu className="size-5" />
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">

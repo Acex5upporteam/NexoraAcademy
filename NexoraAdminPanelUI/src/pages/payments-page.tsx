@@ -162,14 +162,14 @@ export function PaymentsPage() {
         rowActions={(row) => (
           <div className="flex justify-end gap-1">
             {!row.capturedAt && (
-              <Button variant="ghost" size="icon" onClick={() => setCapturing(row)} title="Capture et">
+              <Button variant="ghost" size="icon" onClick={() => setCapturing(row)} aria-label="Ödənişi təsdiqlə" title="Ödənişi təsdiqlə">
                 <CheckCheck className="size-4 text-emerald-600" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
+            <Button variant="ghost" size="icon" onClick={() => openEdit(row)} aria-label="Redaktə et" title="Redaktə et">
               <Pencil className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setDeleting(row)}>
+            <Button variant="ghost" size="icon" onClick={() => setDeleting(row)} aria-label="Sil" title="Sil">
               <Trash2 className="size-4 text-destructive" />
             </Button>
           </div>
